@@ -1,6 +1,5 @@
 package com.des.sakudoku
 
-import androidx.compose.material.icons.materialIcon
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
