@@ -6,6 +6,18 @@ import java.lang.Integer.max
 
 class SudokuGeneratorTest {
 
+    private data class Cell (
+        val col: Int,
+        val row: Int,
+        var value: Int = 0,
+        val discardedValues: MutableSet<Int> = mutableSetOf(),
+        val group: Int = (row / 3) * 3 + (col / 3)
+    ) {
+        constructor(rowCol: RowCol) : this(row = rowCol.row, col = rowCol.col)
+
+        override fun toString(): String = if (value != 0) value.toString() else " "
+    }
+
     private val cells = Array(81) {
         Cell(it.toRowCol())
     }
@@ -16,19 +28,13 @@ class SudokuGeneratorTest {
 
     private val cellsByGroup = cells.groupBy { it.group }
 
-    fun printRows(rows: Map<Int, List<Cell>>) {
+    private fun printRows(rows: Map<Int, List<Cell>>) {
         rows.toSortedMap().forEach {entry ->
             entry.value?.let {
                 println(it)
             }
         }
     }
-
-//    private val grid = Array(9) {
-//            row -> Array(9) {
-//                col -> Cell(row, col)
-//        }
-//    }
 
     @Test
     fun testLinearFiller() {
@@ -156,30 +162,20 @@ class SudokuGeneratorTest {
         assertEquals(RowCol(8,8), 80.toRowCol())
     }
 
+    private fun Int.toRowCol(): RowCol {
+        val col = this % 9
+        val row = this / 9
+        return RowCol(row, col)
+    }
+
+    data class RowCol(val row: Int, val col: Int)
+
+    private fun printGrid(grid: Array<Array<Cell>>) {
+        for(row in 0..8)
+            println(grid[row].contentToString())
+    }
 }
 
-fun Int.toRowCol(): RowCol {
-    val col = this % 9
-    val row = this / 9
-    return RowCol(row, col)
-}
-
-data class RowCol(val row: Int, val col: Int)
-
-fun printGrid(grid: Array<Array<Cell>>) {
-    for(row in 0..8)
-        println(grid[row].contentToString())
-}
 
 
-data class Cell (
-    val col: Int,
-    val row: Int,
-    var value: Int = 0,
-    val discardedValues: MutableSet<Int> = mutableSetOf(),
-    val group: Int = (row / 3) * 3 + (col / 3)
-) {
-    constructor(rowCol: RowCol) : this(row = rowCol.row, col = rowCol.col)
 
-    override fun toString(): String = if (value != 0) value.toString() else " "
-}
