@@ -1,6 +1,6 @@
 package com.des.sakudoku
 
-import org.junit.Assert.fail
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SudokuGeneratorPrefillTest {
@@ -9,25 +9,19 @@ class SudokuGeneratorPrefillTest {
     }
 
     private interface Command {
-        fun execute(method: () -> Boolean) : Boolean
-
-        fun undo(method: () -> Unit) : Unit
+        val name: String
+        fun execute() : () -> Boolean
+        fun undo() : () -> Unit
     }
 
-    private val commands = mutableListOf<Command>()
-
-    private val undoStack = ArrayDeque<() -> Unit>()
-
     private val cellsByCol = cells.groupBy { it.col }
-
     private val cellsByRow = cells.groupBy { it.row }
-
     private val cellsByGroup = cells.groupBy { it.group }
 
     private val usedValuesByRow = mutableMapOf<Int, Set<Int>>()
     private val usedValuesByCol = mutableMapOf<Int, Set<Int>>()
 
-    private fun resetBoard() {
+    fun resetBoard() {
         cells.forEach {
             it.value = 0
             it.options.clear()
@@ -36,89 +30,142 @@ class SudokuGeneratorPrefillTest {
 
     @Test
     fun testPrefill() {
-        // Prefill groups 0, 4 and 8
-        //randomFillDiagonalGroups()    // Should use this method
-        fixSamplesFillDiagonalGroups()  // Just for testing purposes
-
-        val fillDiagonalsWithFixedSamples = object : Command {
-            override fun execute(method: () -> Boolean) = fixSamplesFillDiagonalGroups()
-            override fun undo(method: () -> Unit) {
-                resetBoard()
-            }
-        }
-
         val fillDiagonalGroups = object : Command {
-            override fun execute(method: () -> Boolean) = randomFillDiagonalGroups()
-            override fun undo(method: () -> Unit) {
-                resetBoard()
+            override val name = "Random Fill Diagonals."
+            override fun execute() = ::randomFillDiagonalGroups
+            override fun undo() = ::resetBoard
+        }
+
+        val calculateUsedValuesByColCommand = object : Command {
+            override val name = "Calculated already used values by columns."
+            override fun execute() = ::calculateUsedValuesByCol
+            override fun undo(): () -> Unit  = { }
+        }
+
+        val calculateUsedValuesByRowCommand = object : Command {
+            override val name = "Calculated already used values by rows."
+            override fun execute() = ::calculateUsedValuesByRow
+            override fun undo(): () -> Unit = {}
+        }
+
+        val applyCandidatesToWholeGridCommand = object : Command {
+            override val name = "Apply candidates to all the unfilled cells."
+            override fun execute() = ::applyCandidatesToWholeGrid
+            override fun undo(): () -> Unit = {}
+        }
+
+        class FillGroupCommand(private val groupNumber: Int) : Command {
+            override val name = "Fill group $groupNumber."
+            var cellsSnapshot: MutableList<Cell> = mutableListOf()
+
+            private fun saveSnapshot() {
+                cells.map { cell ->
+                    cell.copy(options = mutableSetOf<Int>().also { it.addAll(cell.options) })
+                }.apply { cellsSnapshot.addAll(this) }
+            }
+            override fun execute(): () -> Boolean = {
+                saveSnapshot()
+                fillGroup(groupNumber)
+            }
+
+            override fun undo(): () -> Unit = {
+                for ((index, cell) in cells.withIndex()) {
+                    cell.value = cellsSnapshot[index].value
+                    cell.options.clear()
+                    cell.options.addAll(cellsSnapshot[index].options)
+                }
             }
         }
 
-        commands.add(fillDiagonalsWithFixedSamples)
+        val fillRemainingCellsCommand = object : Command {
+            override val name = "Fill remaining cells."
+            var cellsSnapshot: MutableList<Cell> = mutableListOf()
 
-        val calculateCandidates = object : Command {
-            override fun execute(method: () -> Boolean) : Boolean {
-                calculateUsedValuesByRow()
-                calculateUsedValuesByCol()
-                applyCandidatesToWholeGrid()
-                return true
+            private fun saveSnapshot() {
+                cells.map { cell ->
+                    cell.copy(options = mutableSetOf<Int>().also { it.addAll(cell.options) })
+                }.apply { cellsSnapshot.addAll(this) }
             }
-            override fun undo(method: () -> Unit) {
-                // Do nothing
-            }
-        }
-
-        commands.add(calculateCandidates)
-
-        val fillGroup2 = object : Command {
-            override fun execute(method: () -> Boolean): Boolean {
-                TODO("Not yet implemented")
+            override fun execute(): () -> Boolean = {
+                saveSnapshot()
+                fillRemainingCellsInBoard()
             }
 
-            override fun undo(method: () -> Unit) {
-                TODO("Not yet implemented")
+            override fun undo(): () -> Unit = {
+                for ((index, cell) in cells.withIndex()) {
+                    cell.value = cellsSnapshot[index].value
+                    cell.options.clear()
+                    cell.options.addAll(cellsSnapshot[index].options)
+                }
             }
         }
 
-        // Here we have at least 6 options per cell, try to fill a single group
-        while(!fillGroup(1)) {
-            println("Could not solve group 1, retrying.")
-        }
-        println("Filled group 1.")
-        printRows(cellsByRow)
+        val commands = mutableListOf<Command>(
+            fillDiagonalGroups,
+            calculateUsedValuesByColCommand,
+            calculateUsedValuesByRowCommand,
+            applyCandidatesToWholeGridCommand,
+            FillGroupCommand(2),
+            FillGroupCommand(6),
+            fillRemainingCellsCommand
+        )
 
-        // Groups 3, 5 and 6 still have at least 6 options per cell
-        while(!fillGroup(3)) {
-            println("Could not solve group 3, retrying.")
-        }
-        println("Filled group 3.")
-        printRows(cellsByRow)
+        // We cannot use a classic for loop cause we may need to step backwards
+        var commandIndex = 0
+        var currentCommandRetries = 0
 
-        // At this point we may have several cells that have only one option,
-        // try to solve the whole board ordered by the lowest options cells
-        var retryCount = 0
-        while (!fillRemainingCellsInBoard()) {
-            println("Could not fill the whole board, retrying.")
-            retryCount++
-            if(retryCount == 10) fail("Could not fill the whole board, retried $retryCount times.")
+        while(commandIndex < commands.size) {
+
+            val command = commands[commandIndex]
+            if(command.execute()()) {
+                commandIndex++
+                currentCommandRetries = 0
+
+                println("""Command "${command.name}" executed successfully.""")
+                printRows(cellsByRow)
+            } else if(currentCommandRetries == 2) {
+                // Step back to the previous command
+                println("""Command "${command.name}" failed $currentCommandRetries times. """ +
+                        "Undoing it.")
+                commands[commandIndex].undo()()
+
+                commandIndex--
+                commands[commandIndex].undo()()
+                println("Stepping back to the previous command: " +
+                        "\"${commands[commandIndex].name}\". It will also be undone.")
+
+                currentCommandRetries = 0
+            } else {
+                currentCommandRetries++
+                println("Command \"${command.name}\" failed $currentCommandRetries times. " +
+                        "Retrying...")
+            }
         }
-        printRows(cellsByRow)
-        println("Board filled.")
+
+        cellsByCol.forEach {
+            val cells = it.value
+            assertEquals(cells.distinctBy { cell -> cell.value }.size, 9)
+        }
+        cellsByRow.forEach {
+            val cells = it.value
+            assertEquals(cells.distinctBy { cell -> cell.value }.size, 9)
+        }
+        cellsByGroup.forEach {
+            val cells = it.value
+            assertEquals(cells.distinctBy { cell -> cell.value }.size, 9)
+        }
 
     }
 
-    private fun applyCandidatesToWholeGrid() {
+    private fun applyCandidatesToWholeGrid() : Boolean {
         cells.filter { it.value == 0 }.forEach {cell ->
             val usedValuesIntersection = usedValuesByRow[cell.row]!!.union(usedValuesByCol[cell.col]!!)
             cell.options.removeAll(usedValuesIntersection)
         }
-
+        return true
     }
 
     private fun fillGroup(group: Int): Boolean {
-        // Prepare state snapshot in undo stack in case we cannot solve the group
-        saveSnapshotInUndoStack()
-
         var groupSolved = false
         try {
 
@@ -137,11 +184,9 @@ class SudokuGeneratorPrefillTest {
                 }
             }
             groupSolved = true
-        } catch (e: NoSuchElementException)  {
-            // Restore state before trying to solve group
-            undoStack.last()()
-//        } finally {
-//            undoStack.removeLast()
+        } catch (_: NoSuchElementException)  {
+            // Do nothing, command processor will undo and retry
+            groupSolved = false
         }
 
         return groupSolved
@@ -149,9 +194,7 @@ class SudokuGeneratorPrefillTest {
 
     private fun fillRemainingCellsInBoard(): Boolean {
         // Prepare state snapshot in undo stack in case we cannot solve the group
-        saveSnapshotInUndoStack()
-
-        var groupSolved = false
+        var boardSolved = false
         try {
 
             // Create a set with the remaining cells in the whole board and process them all
@@ -168,28 +211,15 @@ class SudokuGeneratorPrefillTest {
                     remainingCells.remove(cell)
                 }
             }
-            groupSolved = true
+            boardSolved = true
         } catch (e: NoSuchElementException)  {
-            undoStack.last()()
+            //undoStack.last()()
         }
 
-        return groupSolved
+        return boardSolved
     }
 
-    private fun saveSnapshotInUndoStack() {
-        val cellsCopy = cells.map { cell ->
-            cell.copy(options = mutableSetOf<Int>().also { it.addAll(cell.options) })
-        }
-        undoStack.add {
-            for ((index, cell) in cells.withIndex()) {
-                cell.value = cellsCopy[index].value
-                cell.options.clear()
-                cell.options.addAll(cellsCopy[index].options)
-            }
-        }
-    }
-
-    private fun calculateUsedValuesByRow() {
+    private fun calculateUsedValuesByRow() : Boolean {
         for (row in (0..8)) {
             cellsByRow[row]
                 ?.filter { it.value != 0 }
@@ -199,9 +229,10 @@ class SudokuGeneratorPrefillTest {
                     usedValuesByRow.put(row, it)
             }
         }
+        return true
     }
 
-    private fun calculateUsedValuesByCol() {
+    private fun calculateUsedValuesByCol() : Boolean {
         for (col in (0..8)) {
             cellsByCol[col]
                 ?.filter { it.value != 0 }
@@ -211,16 +242,7 @@ class SudokuGeneratorPrefillTest {
                     usedValuesByCol.put(col, it)
                 }
         }
-    }
-
-    private fun calculateCandidatesForGroup(group: Int) {
-        cellsByGroup[group]?.forEach {cell ->
-            usedValuesByRow[cell.row]?.let { rowCandidates ->
-                usedValuesByCol[cell.col]?.let { colCandidates ->
-                    cell.options.addAll(rowCandidates intersect colCandidates)
-                }
-            }
-        }
+        return true
     }
 
     private fun randomFillDiagonalGroups() : Boolean {
@@ -254,101 +276,6 @@ class SudokuGeneratorPrefillTest {
         }
 
         return true
-    }
-
-    @Test
-    fun testLinearFiller() {    // It fails !!!
-        var currentIndex = 0
-        var noOptionsCount = 0
-        var lastStuckIndex = 0
-        var traceBackNumber = 2
-
-        while (currentIndex < 9*9) {
-
-            // Process a cell
-            var cellHasAValue = false
-
-            while(!cellHasAValue) {
-                val cell = cells[currentIndex]
-
-                val candidates = cell.options
-
-                if(candidates.isEmpty()) {
-                    println("Candidates for cell ${cell.row}:${cell.col} are empty.")
-                    printRows(cellsByRow)
-                    noOptionsCount ++
-
-                    // Back trace n cells: TODO Analyze how many cells should we go back
-                    if(lastStuckIndex == currentIndex) {
-                        traceBackNumber++
-                    } else {
-                        lastStuckIndex = currentIndex
-                        traceBackNumber = 2
-                    }
-
-                    backCells(currentIndex, traceBackNumber)
-                    currentIndex -= traceBackNumber
-                    continue
-                } else {
-                    cell.value = candidates.random()
-                    cell.options.clear()
-
-                    // Update options by column, row and group
-                    cell.updateOptionsInGrid()
-
-                    cellHasAValue = true
-                    currentIndex++
-                }
-            }
-        }
-        println("Result:")
-        printRows(cellsByRow)
-        println("No Options count (must go back): $noOptionsCount")
-    }
-
-    private fun backCells(current: Int, n: Int) {
-
-        // Set of cols, rows and groups that should be recalculated
-        val dirtyRows = mutableSetOf<Int>()
-        val dirtyCols = mutableSetOf<Int>()
-        val dirtyGroups = mutableSetOf<Int>()
-
-        for (index in (current - 1 downTo current - n)) {
-            val cell = cells[index]
-
-            // Clear cell value
-            cell.value = 0
-            dirtyRows.add(cell.row)
-            dirtyCols.add(cell.col)
-            dirtyGroups.add(cell.group)
-        }
-
-        resetOptions(dirtyRows, cellsByRow)
-        resetOptions(dirtyCols, cellsByCol)
-        resetOptions(dirtyGroups, cellsByGroup)
-
-        removeInvalidOptions(dirtyRows, cellsByRow)
-        removeInvalidOptions(dirtyCols, cellsByCol)
-        removeInvalidOptions(dirtyGroups, cellsByGroup)
-    }
-
-    private fun resetOptions(dirtyIndexes: Set<Int>, cellsMap: Map<Int, List<Cell>>) {
-        dirtyIndexes.map { cellsMap[it] }.forEach { cells ->
-            cells?.filter { it.value == 0 }?.forEach {cell ->
-                cell.options.addAll((1..9))
-            }
-        }
-    }
-
-    private fun removeInvalidOptions(dirtyIndexes: Set<Int>, cellsMap: Map<Int, List<Cell>>) {
-        dirtyIndexes.map { cellsMap[it] }.forEach { cells ->
-            val alreadyUsedNumbers = cells?.filter { it.value != 0 }?.map { it.value }?.toSet()
-            cells?.filter { it.value == 0 }?.forEach { cell ->
-                alreadyUsedNumbers?.let {
-                    cell.options.removeAll(it)
-                }
-            }
-        }
     }
 
     private fun Int.toRowCol(): RowCol {
