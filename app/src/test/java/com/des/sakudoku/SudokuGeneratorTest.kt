@@ -14,7 +14,7 @@ class SudokuGeneratorTest {
     @Test
     fun testLinearFiller() {
 
-        val sut = LinearBackTrackGenerator()
+        val sut = LinearBackTrackGenerator
 
         val board = sut.generateBoard()
 

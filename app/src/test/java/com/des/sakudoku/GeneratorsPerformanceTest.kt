@@ -1,7 +1,7 @@
 package com.des.sakudoku
 
-import com.des.sakudoku.board.generator.CommandBackTrackGenerator
 import com.des.sakudoku.board.generator.LinearBackTrackGenerator
+import com.des.sakudoku.board.generator.CommandBackTrackGenerator
 import org.junit.Test
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
@@ -20,7 +20,7 @@ class GeneratorsPerformanceTest {
         repeat(times) {
             measures.add(
                 measureTime {
-                    CommandBackTrackGenerator().generateBoard()
+                    CommandBackTrackGenerator.generateBoard()
                 }
             )
         }
@@ -39,7 +39,7 @@ class GeneratorsPerformanceTest {
         repeat(times) {
             measures.add(
                 measureTime {
-                    LinearBackTrackGenerator().generateBoard()
+                    LinearBackTrackGenerator.generateBoard()
                 }
             )
         }

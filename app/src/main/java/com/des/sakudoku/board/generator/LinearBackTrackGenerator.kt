@@ -1,8 +1,11 @@
 package com.des.sakudoku.board.generator
 
-class LinearBackTrackGenerator : BoardGenerator {
+object LinearBackTrackGenerator : BoardGenerator {
+    override fun generateBoard(): Board = LinearBackTrackGeneratorImpl().generateBoard()
+}
 
-    // TODO Each generateBoard() should use a new instance -> refactor this class
+private class LinearBackTrackGeneratorImpl : BoardGenerator {
+
     private val board = Board()
 
     override fun generateBoard(): Board {
@@ -12,7 +15,6 @@ class LinearBackTrackGenerator : BoardGenerator {
 
         while (currentIndex < 9*9) {
 
-            // Process a cell
             var validValue = false
 
             while(!validValue) {
@@ -40,9 +42,7 @@ class LinearBackTrackGenerator : BoardGenerator {
                     currentIndex++
                 }
             }
-
         }
-
         return board
     }
 
@@ -55,13 +55,19 @@ class LinearBackTrackGenerator : BoardGenerator {
     }
 
     private fun findColumnCollision(cell: Cell) : Cell? =
-        board.cellsByCol[cell.col]?.filterNot { it == cell }?.firstOrNull { it.value == cell.value }
+        board.cellsByCol[cell.col]
+            ?.filterNot { it == cell }
+            ?.firstOrNull { it.value == cell.value }
 
     private fun findRowCollision(cell: Cell) : Cell? =
-        board.cellsByRow[cell.row]?.filterNot { it == cell }?.firstOrNull { it.value == cell.value }
+        board.cellsByRow[cell.row]
+            ?.filterNot { it == cell }
+            ?.firstOrNull { it.value == cell.value }
 
     private fun findGroupCollision(cell: Cell) : Cell? =
-        board.cellsByGroup[cell.group]?.filterNot { it == cell }?.firstOrNull { it.value == cell.value }
+        board.cellsByGroup[cell.group]
+            ?.filterNot { it == cell }
+            ?.firstOrNull { it.value == cell.value }
 
     private fun backToCell(index: Int, backTo: Int) {
         var currentIndex = index

@@ -1,17 +1,16 @@
 package com.des.sakudoku.board.generator
 
-class CommandBackTrackGenerator : BoardGenerator {
+
+object CommandBackTrackGenerator : BoardGenerator  {
+    override fun generateBoard(): Board = CommandBackTrackGeneratorImpl().generateBoard()
+}
+
+private class CommandBackTrackGeneratorImpl : BoardGenerator {
 
     private val board = Board()
 
     private val usedValuesByRow = mutableMapOf<Int, Set<Int>>()
     private val usedValuesByCol = mutableMapOf<Int, Set<Int>>()
-
-    private interface Command {
-        val name: String
-        fun execute() : () -> Boolean
-        fun undo() : () -> Unit
-    }
 
     override fun generateBoard(): Board {
         val fillDiagonalGroups = object : Command {
@@ -104,26 +103,14 @@ class CommandBackTrackGenerator : BoardGenerator {
             if(command.execute()()) {
                 commandIndex++
                 currentCommandRetries = 0
-
-                //println("""Command "${command.name}" executed successfully.""")
-                //printRows(board.cellsByRow)
             } else if(currentCommandRetries == 2) {
                 // Step back to the previous command
-                //println("""Command "${command.name}" failed $currentCommandRetries times. """ +
-                //        "Undoing it.")
                 commands[commandIndex].undo()()
-
                 commandIndex--
                 commands[commandIndex].undo()()
-                //println("Stepping back to the previous command: " +
-                //        "\"${commands[commandIndex].name}\". It will also be undone.")
-
                 currentCommandRetries = 0
             } else {
                 currentCommandRetries++
-                //retriesLog.add(Pair(commandIndex, command.name))
-                //println("Command \"${command.name}\" failed $currentCommandRetries times. " +
-                //        "Retrying...")
             }
         }
         return board

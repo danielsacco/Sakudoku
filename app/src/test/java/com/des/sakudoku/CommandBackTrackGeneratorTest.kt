@@ -9,7 +9,7 @@ class CommandBackTrackGeneratorTest {
     @Test
     fun testPrefill() {
 
-        val sut = CommandBackTrackGenerator()
+        val sut = CommandBackTrackGenerator
 
         val board = sut.generateBoard()
 
