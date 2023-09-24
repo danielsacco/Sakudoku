@@ -3,10 +3,12 @@ package com.des.sakudoku
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class SudokuGeneratorPrefillTest {
+class CommandBackTrackGeneratorTest {
     private val cells = Array(81) {
         Cell(it.toRowCol())
     }
+
+    private val retriesLog = mutableListOf<Pair<Int,String>>()
 
     private interface Command {
         val name: String
@@ -137,6 +139,7 @@ class SudokuGeneratorPrefillTest {
                 currentCommandRetries = 0
             } else {
                 currentCommandRetries++
+                retriesLog.add(Pair(commandIndex, command.name))
                 println("Command \"${command.name}\" failed $currentCommandRetries times. " +
                         "Retrying...")
             }
@@ -153,6 +156,14 @@ class SudokuGeneratorPrefillTest {
         cellsByGroup.forEach {
             val cells = it.value
             assertEquals(cells.distinctBy { cell -> cell.value }.size, 9)
+        }
+
+        println()
+        retriesLog.forEach {
+            val indentation = "\t".repeat(it.first - 3)
+            val command = it.second
+
+            println("${indentation}Retry $command")
         }
 
     }
@@ -255,26 +266,6 @@ class SudokuGeneratorPrefillTest {
                 }
             }
         }
-        return true
-    }
-
-    private fun fixSamplesFillDiagonalGroups() : Boolean {
-
-        val fixedValues0 = listOf(2, 3, 4, 6, 8, 7, 5, 9, 1)
-        for ((index, cell) in cellsByGroup[0]!!.withIndex()) {
-            cell.value = fixedValues0[index]
-        }
-
-        val fixedValues4 = listOf(4, 2, 9, 8, 3, 5, 1, 7, 6)
-        for ((index, cell) in cellsByGroup[4]!!.withIndex()) {
-            cell.value = fixedValues4[index]
-        }
-
-        val fixedValues8 = listOf(4, 8, 9, 6, 3, 2, 5, 7, 1)
-        for ((index, cell) in cellsByGroup[8]!!.withIndex()) {
-            cell.value = fixedValues8[index]
-        }
-
         return true
     }
 

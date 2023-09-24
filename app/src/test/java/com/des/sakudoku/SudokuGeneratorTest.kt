@@ -52,7 +52,7 @@ class SudokuGeneratorTest {
                 val candidates = (1..9).filterNot { cell.discardedValues.contains(it) }
 
                 if(candidates.isEmpty()) {
-                    // Back trace n cells: TODO Analyze how many cells should we go back
+                    // Back trace n cells
                     noOptionsCount ++
                     val backIndex = max((currentIndex - noOptionsCount) + 1, 9)
                     backToCell(currentIndex, backIndex)
@@ -65,8 +65,6 @@ class SudokuGeneratorTest {
                 if(collisions.isNotEmpty()) {
                     collisionCount++
                     cell.discardedValues.add(cell.value)
-                    //printCollisions(cell, collisions)
-                    //printRows(cellsByRow)
                 } else {
                     validValue = true
 
@@ -81,6 +79,20 @@ class SudokuGeneratorTest {
         printRows(cellsByRow)
         println("Collisions count: $collisionCount")
         println("No Options count (must go back): $noOptionsCount")
+
+        cellsByCol.forEach {
+            val cells = it.value
+            assertEquals(cells.distinctBy { cell -> cell.value }.size, 9)
+        }
+        cellsByRow.forEach {
+            val cells = it.value
+            assertEquals(cells.distinctBy { cell -> cell.value }.size, 9)
+        }
+        cellsByGroup.forEach {
+            val cells = it.value
+            assertEquals(cells.distinctBy { cell -> cell.value }.size, 9)
+        }
+
     }
 
     private fun backToCell(index: Int, backTo: Int) {
