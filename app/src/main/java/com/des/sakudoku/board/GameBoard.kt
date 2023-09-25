@@ -18,9 +18,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.des.sakudoku.board.generator.Board
 import com.des.sakudoku.board.generator.Cell
 import com.des.sakudoku.board.generator.SampleBoardGenerator
@@ -36,7 +38,6 @@ fun GameBoard(
     modifier: Modifier = Modifier,
     boardViewModel: BoardViewModel = viewModel()
 ) {
-
     Row(
         modifier = modifier.fillMaxWidth()
     ) {
@@ -49,13 +50,13 @@ fun GameBoard(
                     GameCell(
                         data = boardViewModel.cells[row][col],
                         modifier = modifier,
-                        bgColor = backgroundColor(col = col, row = row)
+                        bgColor = backgroundColor(col = col, row = row),
+                        onClick = boardViewModel::clickedCell
                     )
                 }
             }
         }
     }
-
 }
 
 @Preview(showBackground = true)
@@ -78,12 +79,11 @@ fun backgroundColor(row: Int, col: Int): Color {
 fun GameCell(
     data: CellData,
     bgColor: Color,
+    onClick: (cellData: CellData) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selected by remember { mutableStateOf(false) }
-
     Surface(
-        color = if(selected) MaterialTheme.colorScheme.surfaceVariant
+        color = if(data.selected) MaterialTheme.colorScheme.surfaceVariant
                 else bgColor,
         modifier = modifier
     ) {
@@ -92,10 +92,14 @@ fun GameCell(
             modifier = Modifier
                 .size(52.dp)
                 .border(1.dp, Color(0xFFF0F0F0))
-                .selectable(true) { selected = !selected }
+                .selectable(true) { onClick(data) }
         ) {
             when (data) {
-                is CellData.FixedCell -> Text(text = data.value.toString())
+                is CellData.FixedCell -> Text(
+                    text = data.value.toString(),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp
+                )
                 is CellData.CellGuess -> Text(text = data.value.toString())
                 is CellData.CellCandidates -> CellOptions(data)
             }
