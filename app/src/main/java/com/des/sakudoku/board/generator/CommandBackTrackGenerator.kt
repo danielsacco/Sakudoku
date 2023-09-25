@@ -125,7 +125,7 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
     }
 
     private fun fillGroup(group: Int): Boolean {
-        var groupSolved = false
+        var groupSolved: Boolean
         try {
 
             // Create a set of cells to be filled and process them all

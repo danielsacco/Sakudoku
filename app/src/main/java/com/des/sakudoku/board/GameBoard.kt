@@ -21,12 +21,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.des.sakudoku.board.generator.Board
+import com.des.sakudoku.board.generator.Cell
+import com.des.sakudoku.board.generator.SampleBoardGenerator
+import com.des.sakudoku.model.BoardViewModel
 import com.des.sakudoku.model.CellData
 import com.des.sakudoku.ui.theme.SakudokuTheme
 import kotlin.random.Random
+import androidx.lifecycle.viewmodel.compose.viewModel
+
 
 @Composable
-fun GameBoard(modifier: Modifier = Modifier) {
+fun GameBoard(
+    modifier: Modifier = Modifier,
+    boardViewModel: BoardViewModel = viewModel()
+) {
+
     Row(
         modifier = modifier.fillMaxWidth()
     ) {
@@ -37,14 +47,22 @@ fun GameBoard(modifier: Modifier = Modifier) {
             ) {
                 for (row in 0..8) {
                     GameCell(
-                        // TODO Values should come from the model !!!
-                        data = CellData.CellValue(Random.nextInt(1, 10)),
+                        data = boardViewModel.cells[row][col],
                         modifier = modifier,
                         bgColor = backgroundColor(col = col, row = row)
                     )
                 }
             }
         }
+    }
+
+}
+
+@Preview(showBackground = true)
+@Composable
+fun BoardPreview() {
+    SakudokuTheme {
+        GameBoard()
     }
 }
 
@@ -77,8 +95,8 @@ fun GameCell(
                 .selectable(true) { selected = !selected }
         ) {
             when (data) {
-                is CellData.ExposedCell -> Text(text = data.value.toString())
-                is CellData.CellValue -> Text(text = data.value.toString())
+                is CellData.FixedCell -> Text(text = data.value.toString())
+                is CellData.CellGuess -> Text(text = data.value.toString())
                 is CellData.CellCandidates -> CellOptions(data)
             }
         }
@@ -96,8 +114,7 @@ fun CellOptions(
                 for (index in 1..3) {
                     value++
                     Text(
-                        text =  if(Random.nextBoolean()) value.toString()
-                        else "",
+                        text = "",
                         style = MaterialTheme.typography.labelSmall,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.size(16.dp)
@@ -107,12 +124,4 @@ fun CellOptions(
         }
     }
 
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    SakudokuTheme {
-        GameBoard()
-    }
 }
