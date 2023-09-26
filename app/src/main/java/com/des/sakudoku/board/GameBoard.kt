@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -83,21 +85,33 @@ fun GameCell(
                 .selectable(true) { onClick(data) }
         ) {
             when (data) {
-                is CellData.FixedCell -> Text(
+                is CellData.FixedCellData -> Text(
                     text = data.value.toString(),
                     fontWeight = FontWeight.Bold,
                     fontSize = 24.sp
                 )
-                is CellData.CellGuess -> Text(text = data.value.toString())
-                is CellData.CellCandidates -> OptionsCell(data)
+                is CellData.PlayerCellData -> PlayerCell(data)
+//                is CellData.CellGuess -> Text(text = data.value.toString())
+//                is CellData.CellCandidates -> OptionsCell(data)
             }
         }
     }
 }
 
 @Composable
+fun PlayerCell(data: CellData.PlayerCellData) {
+
+    if(data.hasGuess()) {
+        Text(text = data.guess.toString())
+    } else {
+        OptionsCell(data)
+    }
+
+}
+
+@Composable
 fun OptionsCell(
-    options: CellData.CellCandidates
+    data: CellData.PlayerCellData
 ) {
     Column {
         var value = 0
@@ -106,7 +120,7 @@ fun OptionsCell(
                 for (index in 1..3) {
                     value++
                     Text(
-                        text = "",
+                        text = if (data.isCandidate(value)) value.toString() else "",
                         style = MaterialTheme.typography.labelSmall,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.size(16.dp)
@@ -136,7 +150,7 @@ fun NumbersPad(boardViewModel: BoardViewModel = viewModel()) {
                     val number = row * 3 + col
                     Button(
                         onClick = { boardViewModel.numberEntered(number) },
-                        enabled = boardViewModel.numberInputEnabled
+                        enabled = boardViewModel.isEditableCell()
                     ) {
                         Text(number.toString())
                     }
@@ -158,6 +172,13 @@ fun ControlsPad(boardViewModel: BoardViewModel = viewModel()) {
             checked = boardViewModel.editMode,
             onCheckedChange = {boardViewModel.toggleEditMode()}
         )
+        Spacer(modifier = Modifier.size(12.dp))
+        Button(
+            onClick = { boardViewModel.clearCell() },
+            enabled = boardViewModel.isEditableCell()
+        ) {
+            Icon(imageVector = Icons.Default.Delete, contentDescription = null)
+        }
     }
 }
 
