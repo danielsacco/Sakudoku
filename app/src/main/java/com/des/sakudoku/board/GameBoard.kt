@@ -4,17 +4,17 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,15 +23,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.des.sakudoku.board.generator.Board
-import com.des.sakudoku.board.generator.Cell
-import com.des.sakudoku.board.generator.SampleBoardGenerator
 import com.des.sakudoku.model.BoardViewModel
 import com.des.sakudoku.model.CellData
 import com.des.sakudoku.ui.theme.SakudokuTheme
-import kotlin.random.Random
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+
+@Composable
+fun GameScreen() {
+    Column {
+        GameBoard()
+        ActionsBoard()
+    }
+}
 
 @Composable
 fun GameBoard(
@@ -48,7 +52,7 @@ fun GameBoard(
             ) {
                 for (row in 0..8) {
                     GameCell(
-                        data = boardViewModel.cells[row][col],
+                        data = boardViewModel.cells[row * 9 + col],
                         modifier = modifier,
                         bgColor = backgroundColor(col = col, row = row),
                         onClick = boardViewModel::clickedCell
@@ -57,22 +61,6 @@ fun GameBoard(
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun BoardPreview() {
-    SakudokuTheme {
-        GameBoard()
-    }
-}
-
-fun backgroundColor(row: Int, col: Int): Color {
-    val groupNumber = (row /3) + (col / 3)
-
-    return if(groupNumber % 2 == 0)
-        Color(0xFFFAFAFA) else
-        Color(0xFFF2F2F2)
 }
 
 @Composable
@@ -101,14 +89,14 @@ fun GameCell(
                     fontSize = 24.sp
                 )
                 is CellData.CellGuess -> Text(text = data.value.toString())
-                is CellData.CellCandidates -> CellOptions(data)
+                is CellData.CellCandidates -> OptionsCell(data)
             }
         }
     }
 }
 
 @Composable
-fun CellOptions(
+fun OptionsCell(
     options: CellData.CellCandidates
 ) {
     Column {
@@ -127,5 +115,80 @@ fun CellOptions(
             }
         }
     }
+}
 
+
+@Composable
+fun ActionsBoard(boardViewModel: BoardViewModel = viewModel()) {
+    Column {
+        NumbersPad()
+        ControlsPad()
+    }
+}
+
+
+@Composable
+fun NumbersPad(boardViewModel: BoardViewModel = viewModel()) {
+    Column {
+        for(row in 0..2) {
+            Row {
+                for (col in 1..3) {
+                    val number = row * 3 + col
+                    Button(
+                        onClick = { boardViewModel.numberEntered(number) },
+                        enabled = boardViewModel.numberInputEnabled
+                    ) {
+                        Text(number.toString())
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ControlsPad(boardViewModel: BoardViewModel = viewModel()) {
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("Edit")
+        Spacer(modifier = Modifier.size(12.dp))
+        Switch(
+            checked = boardViewModel.editMode,
+            onCheckedChange = {boardViewModel.toggleEditMode()}
+        )
+    }
+}
+
+fun backgroundColor(row: Int, col: Int): Color {
+    val groupNumber = (row /3) + (col / 3)
+
+    return if(groupNumber % 2 == 0)
+        Color(0xFFFAFAFA) else
+        Color(0xFFF2F2F2)
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ScreenPreview() {
+    SakudokuTheme {
+        GameScreen()
+    }
+}
+
+//@Preview(showBackground = true)
+@Composable
+fun BoardPreview() {
+    SakudokuTheme {
+        GameBoard()
+    }
+}
+
+//@Preview(showBackground = true)
+@Composable
+fun ActionsBoardPreview() {
+    SakudokuTheme {
+        ActionsBoard()
+    }
 }

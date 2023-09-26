@@ -13,31 +13,31 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
     private val usedValuesByCol = mutableMapOf<Int, Set<Int>>()
 
     override fun generateBoard(): Board {
-        val fillDiagonalGroups = object : Command {
+        val fillDiagonalGroups = object : Command<Boolean> {
             override val name = "Random Fill Diagonals."
             override fun execute() = ::randomFillDiagonalGroups
             override fun undo() = board::reset
         }
 
-        val calculateUsedValuesByColCommand = object : Command {
+        val calculateUsedValuesByColCommand = object : Command<Boolean> {
             override val name = "Calculated already used values by columns."
             override fun execute() = ::calculateUsedValuesByCol
             override fun undo(): () -> Unit  = { }
         }
 
-        val calculateUsedValuesByRowCommand = object : Command {
+        val calculateUsedValuesByRowCommand = object : Command<Boolean> {
             override val name = "Calculated already used values by rows."
             override fun execute() = ::calculateUsedValuesByRow
             override fun undo(): () -> Unit = {}
         }
 
-        val applyCandidatesToWholeGridCommand = object : Command {
+        val applyCandidatesToWholeGridCommand = object : Command<Boolean> {
             override val name = "Apply candidates to all the unfilled cells."
             override fun execute() = ::applyCandidatesToWholeGrid
             override fun undo(): () -> Unit = {}
         }
 
-        class FillGroupCommand(private val groupNumber: Int) : Command {
+        class FillGroupCommand(private val groupNumber: Int) : Command<Boolean> {
             override val name = "Fill group $groupNumber."
             var cellsSnapshot: MutableList<Cell> = mutableListOf()
 
@@ -60,7 +60,7 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
             }
         }
 
-        val fillRemainingCellsCommand = object : Command {
+        val fillRemainingCellsCommand = object : Command<Boolean> {
             override val name = "Fill remaining cells."
             var cellsSnapshot: MutableList<Cell> = mutableListOf()
 
@@ -83,7 +83,7 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
             }
         }
 
-        val commands = mutableListOf<Command>(
+        val commands = mutableListOf (
             fillDiagonalGroups,
             calculateUsedValuesByColCommand,
             calculateUsedValuesByRowCommand,

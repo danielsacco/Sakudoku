@@ -1,18 +1,24 @@
 package com.des.sakudoku.model
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+
 sealed class CellData {
 
     abstract val col: Int
 
     abstract val row: Int
 
-    var selected = false
+    var selected: Boolean by mutableStateOf(false)
 
     /**
      * A cell that exposes the real value it holds. These cells show their value from the
      * beginning fo the game.
      */
     data class FixedCell(override val col: Int, override val row: Int, val value: Int) : CellData()
+
+
 
     /**
      * A cell filled with a number guessed by the player

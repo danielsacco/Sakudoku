@@ -1,8 +1,8 @@
 package com.des.sakudoku.board.generator
 
-interface Command {
+interface Command<T> {
     val name: String
-    fun execute() : () -> Boolean
+    fun execute() : () -> T
     fun undo() : () -> Unit
 
 }
