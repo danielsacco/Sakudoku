@@ -9,8 +9,10 @@ class CellDataTest {
 
     @Test
     fun test1() {
-        val candidates = setOf(1, 5, 9)
-        val sut = CellData.PlayerCellData(1,1, options = candidates)
+        val sut = CellData.PlayerCellData(1,1)
+        sut.toggleOption(1)
+        sut.toggleOption(5)
+        sut.toggleOption(9)
 
         assertTrue(sut.isCandidate(1))
         assertFalse(sut.isCandidate(4))
