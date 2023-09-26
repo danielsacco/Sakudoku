@@ -22,11 +22,11 @@ class BoardViewModel : ViewModel() {
     val cells: List<CellData>
         get() = _cells
 
-    private var selectedCell: CellData? = null
+    private var selectedCell: CellData? by mutableStateOf(null)
 
-    private var _numberInputEnabled : Boolean by mutableStateOf(false)
-    val numberInputEnabled : Boolean
-        get() = _numberInputEnabled
+    //private var _numberInputEnabled : Boolean by mutableStateOf(false)
+    //val numberInputEnabled : Boolean
+    //    get() = _numberInputEnabled
 
     fun clickedCell(cell: CellData) {
         if(selectedCell === cell) {
@@ -37,15 +37,16 @@ class BoardViewModel : ViewModel() {
             selectedCell?.selected = false
             selectedCell = cell
             cell.selected = true
-            _numberInputEnabled = true
+            //_numberInputEnabled = cell is CellData.PlayerCellData
         }
     }
 
+    fun isEditableCell() = selectedCell is CellData.PlayerCellData
 
-    fun isGuessCorrect(guessCell: CellData.CellGuess) =
-        correctValues[guessCell.row * 9 + guessCell.col] == guessCell.value
+    fun isGuessCorrect(playerCell: CellData.PlayerCellData) =
+        correctValues[playerCell.row * 9 + playerCell.col] == playerCell.guess
 
-    fun guessConflicts(guessCell: CellData.CellGuess) : List<CellData>  {
+    fun guessConflicts(playerCell: CellData.PlayerCellData) : List<CellData>  {
         TODO()
         //return emptyList()
     }
@@ -60,11 +61,21 @@ class BoardViewModel : ViewModel() {
     }
 
     private fun toggleCandidate(number: Int) {
-
+        if(selectedCell is CellData.PlayerCellData) {
+            val cell = selectedCell as CellData.PlayerCellData
+            cell.toggleOption(number)
+        }
     }
 
     private fun toggleGuess(number: Int) {
+        if(selectedCell is CellData.PlayerCellData) {
+            val cell = selectedCell as CellData.PlayerCellData
+            cell.toggleGuess(number)
+        }
+    }
 
+    fun clearCell() {
+        selectedCell?.clear()
     }
 
     private fun initCellData() : List<CellData> {
@@ -78,9 +89,9 @@ class BoardViewModel : ViewModel() {
             val col = index % 9
 
             if (mask[index])
-                CellData.FixedCell(value = board.cells[index].value, row = row, col = col)
+                CellData.FixedCellData(value = board.cells[index].value, row = row, col = col)
             else
-                CellData.CellCandidates(row = row, col = col)
+                CellData.PlayerCellData(row = row, col = col)
         }
     }
 

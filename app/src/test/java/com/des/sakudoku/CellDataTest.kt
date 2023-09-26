@@ -10,7 +10,7 @@ class CellDataTest {
     @Test
     fun test1() {
         val candidates = setOf(1, 5, 9)
-        val sut = CellData.CellCandidates(candidates)
+        val sut = CellData.PlayerCellData(1,1, options = candidates)
 
         assertTrue(sut.isCandidate(1))
         assertFalse(sut.isCandidate(4))
@@ -18,7 +18,7 @@ class CellDataTest {
 
     @Test
     fun test2() {
-        val sut = CellData.CellCandidates()
+        val sut = CellData.PlayerCellData(1, 1)
 
         assertFalse(sut.isCandidate(1))
         assertFalse(sut.isCandidate(4))
@@ -26,6 +26,7 @@ class CellDataTest {
         assertTrue(sut.isEmpty())
     }
 
+    // TODO Other Tests !!!
 
 
 }
