@@ -11,7 +11,7 @@ import kotlin.time.toDuration
 
 class GeneratorsPerformanceTest {
 
-    val times = 5000
+    val times = 10000
     @OptIn(ExperimentalTime::class)
     @Test
     fun measureCommandBackTrackGenerator() {
@@ -28,6 +28,7 @@ class GeneratorsPerformanceTest {
         printMin(measures)
         printAverage(measures)
         printMax(measures)
+        println("Unsolvable collisions count: ${CommandBackTrackGenerator.unsolvableCount}")
     }
 
     @OptIn(ExperimentalTime::class)

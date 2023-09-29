@@ -1,8 +1,12 @@
 package com.des.sakudoku.board.generator
 
+import com.des.sakudoku.board.generator.CommandBackTrackGenerator.unsolvableCount
+
 
 object CommandBackTrackGenerator : BoardGenerator  {
     override fun generateBoard(): Board = CommandBackTrackGeneratorImpl().generateBoard()
+
+    var unsolvableCount = 0L
 }
 
 private class CommandBackTrackGeneratorImpl : BoardGenerator {
@@ -19,11 +23,6 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
     }
 
     override fun generateBoard(): Board {
-
-        randomFillDiagonalGroups()
-        calculateUsedValuesByCol()
-        calculateUsedValuesByRow()
-        applyCandidatesToWholeGrid()
 
         class FillGroupCommand(private val groupNumber: Int) : Command<Boolean> {
             override val name = "Fill group $groupNumber."
@@ -68,6 +67,11 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
             }
         }
 
+        randomFillIndependentGroup(listOf(0, 4, 8))
+        calculateUsedValuesByCol()
+        calculateUsedValuesByRow()
+        updateOptionsForUnsetCells()
+
         val commands = mutableListOf (
             FillGroupCommand(2),
             FillGroupCommand(6),
@@ -99,7 +103,7 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
         return board
     }
 
-    private fun applyCandidatesToWholeGrid() {
+    private fun updateOptionsForUnsetCells() {
         board.cells.filter { it.value == 0 }.forEach {cell ->
             val usedValuesIntersection = usedValuesByRow[cell.row]!!.union(usedValuesByCol[cell.col]!!)
             cell.options.removeAll(usedValuesIntersection)
@@ -180,8 +184,16 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
         }
     }
 
-    private fun randomFillDiagonalGroups() {
-        listOf(0, 4, 8).forEach {group ->
+    /**
+     * Randomly fill independent groups of cells.
+     * Independent groups are those that not share columns and rows so we can fill each one
+     * without affecting the others.
+     * For example: groups 0, 4, 8 do not share rows or cols.
+     * Other options are (2, 4, 6); (0, 5, 7) etc.
+     */
+    private fun randomFillIndependentGroup(groups: List<Int>) {
+        groups.forEach {group ->
+
             val options = (1..9).toMutableSet()
 
             board.cellsByGroup[group]!!.forEach { cell ->
@@ -199,6 +211,7 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
             .filterNot { it == this }
             .forEach { cell ->
                 cell.options.remove(this.value)
+                unsolvableCount++  // DEBUG
                 if(cell.options.isEmpty()) throw NoSuchElementException("You left cell ${cell.row}:${cell.col} with no options.")
             }
         board.cellsByRow[this.row]!!
@@ -206,6 +219,7 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
             .filterNot { it == this }
             .forEach { cell ->
                 cell.options.remove(this.value)
+                unsolvableCount++  // DEBUG
                 if(cell.options.isEmpty()) throw NoSuchElementException("You left cell ${cell.row}:${cell.col} with no options.")
             }
         board.cellsByGroup[this.group]!!
@@ -213,6 +227,7 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
             .filterNot { it == this }
             .forEach { cell ->
                 cell.options.remove(this.value)
+                unsolvableCount++  // DEBUG
                 if(cell.options.isEmpty()) throw NoSuchElementException("You left cell ${cell.row}:${cell.col} with no options.")
             }
     }
