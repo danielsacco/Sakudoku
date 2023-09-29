@@ -26,8 +26,15 @@ class CommandBackTrackGeneratorTest {
             assertEquals(cells.distinctBy { cell -> cell.value }.size, 9)
         }
 
-        board.print()
+        //board.print()
 
+    }
+
+    @Test
+    fun repeatTest() {
+        repeat(10) {
+            testPrefill()
+        }
     }
 
 }

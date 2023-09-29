@@ -8,8 +8,11 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import com.des.sakudoku.board.generator.FixedMaskGenerator
 import com.des.sakudoku.board.generator.SampleBoardGenerator
+import com.des.sakudoku.board.generator.UndoCommand
 
 class BoardViewModel : ViewModel() {
+
+    private var undoStack: MutableList<UndoCommand> = mutableListOf<UndoCommand>().toMutableStateList()
 
     private lateinit var correctValues: List<Int>
 
@@ -24,10 +27,6 @@ class BoardViewModel : ViewModel() {
 
     private var selectedCell: CellData? by mutableStateOf(null)
 
-    //private var _numberInputEnabled : Boolean by mutableStateOf(false)
-    //val numberInputEnabled : Boolean
-    //    get() = _numberInputEnabled
-
     fun clickedCell(cell: CellData) {
         if(selectedCell === cell) {
             //cell.selected = false
@@ -37,7 +36,6 @@ class BoardViewModel : ViewModel() {
             selectedCell?.selected = false
             selectedCell = cell
             cell.selected = true
-            //_numberInputEnabled = cell is CellData.PlayerCellData
         }
     }
 

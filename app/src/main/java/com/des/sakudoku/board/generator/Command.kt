@@ -6,3 +6,8 @@ interface Command<T> {
     fun undo() : () -> Unit
 
 }
+
+interface UndoCommand {
+    fun undo() : () -> Unit
+
+}

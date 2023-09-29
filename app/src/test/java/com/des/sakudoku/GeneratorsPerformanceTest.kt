@@ -11,7 +11,7 @@ import kotlin.time.toDuration
 
 class GeneratorsPerformanceTest {
 
-    val times = 500
+    val times = 5000
     @OptIn(ExperimentalTime::class)
     @Test
     fun measureCommandBackTrackGenerator() {
@@ -36,7 +36,7 @@ class GeneratorsPerformanceTest {
 
         val measures = mutableListOf<Duration>()
 
-        repeat(times) {
+        repeat(times/10) {
             measures.add(
                 measureTime {
                     LinearBackTrackGenerator.generateBoard()

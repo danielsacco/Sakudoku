@@ -1,6 +1,7 @@
 package com.des.sakudoku.board
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -134,7 +136,10 @@ fun OptionsCell(
 
 @Composable
 fun ActionsBoard(boardViewModel: BoardViewModel = viewModel()) {
-    Column {
+    Row (
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        modifier = Modifier.fillMaxWidth()
+    ) {
         NumbersPad()
         ControlsPad()
     }
@@ -162,7 +167,17 @@ fun NumbersPad(boardViewModel: BoardViewModel = viewModel()) {
 
 @Composable
 fun ControlsPad(boardViewModel: BoardViewModel = viewModel()) {
+    Column(
+        horizontalAlignment = Alignment.End
+    ) {
+        EditSwitch()
+        ClearButton()
+        UndoButton()
+    }
+}
 
+@Composable
+fun EditSwitch(boardViewModel: BoardViewModel = viewModel()) {
     Row(
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -172,15 +187,30 @@ fun ControlsPad(boardViewModel: BoardViewModel = viewModel()) {
             checked = boardViewModel.editMode,
             onCheckedChange = {boardViewModel.toggleEditMode()}
         )
-        Spacer(modifier = Modifier.size(12.dp))
-        Button(
-            onClick = { boardViewModel.clearCell() },
-            enabled = boardViewModel.isEditableCell()
-        ) {
-            Icon(imageVector = Icons.Default.Delete, contentDescription = null)
-        }
     }
 }
+
+@Composable
+fun ClearButton(boardViewModel: BoardViewModel = viewModel()) {
+    Button(
+        onClick = { boardViewModel.clearCell() },
+        enabled = boardViewModel.isEditableCell()
+    ) {
+        Icon(imageVector = Icons.Default.Delete, contentDescription = null)
+    }
+}
+
+
+@Composable
+fun UndoButton(boardViewModel: BoardViewModel = viewModel()) {
+    Button(
+        onClick = {  }, // TODO
+        enabled = false
+    ) {
+        Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
+    }
+}
+
 
 fun backgroundColor(row: Int, col: Int): Color {
     val groupNumber = (row /3) + (col / 3)

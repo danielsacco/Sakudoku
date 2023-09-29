@@ -1,11 +1,7 @@
 package com.des.sakudoku.board.generator
 
 
-object CommandBackTrackGenerator : BoardGenerator  {
-    override fun generateBoard(): Board = CommandBackTrackGeneratorImpl().generateBoard()
-}
-
-private class CommandBackTrackGeneratorImpl : BoardGenerator {
+private class CommandBackTrackSequenceGeneratorImpl : BoardGenerator {
 
     private val board = Board()
 
@@ -17,6 +13,14 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
             it.addAll(cell.options)
         })
     }
+
+    // No noticeable performance difference using this method
+    fun takeSnapshotAsSequence() : List<Cell> = board.cells.asSequence()
+        .map { cell ->
+            cell.copy(options = mutableSetOf<Int>().also {
+                it.addAll(cell.options)
+            })
+        }.toList()
 
     override fun generateBoard(): Board {
 
@@ -134,7 +138,7 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
     }
 
     private fun fillRemainingCellsInBoard(): Boolean {
-        var boardSolved: Boolean
+        var boardSolved = false
         try {
 
             // Create a set with the remaining cells in the whole board and process them all
@@ -143,7 +147,7 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
                 // Create a map sorted by number of options in each remaining cell
                 val cellsByOptionsSize = remainingCells.groupBy { it.options.size }.toSortedMap()
 
-                // Fill a random cell from the ones with less possibilities of being filled
+                // Fill a random cell from the ones with lower options
                 cellsByOptionsSize[cellsByOptionsSize.firstKey()]!!.random().let {cell ->
                     cell.value = cell.options.random()
                     cell.options.clear()
@@ -153,8 +157,7 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
             }
             boardSolved = true
         } catch (e: NoSuchElementException)  {
-            // Do nothing, command processor will undo and retry
-            boardSolved = false
+            // Do nothing
         }
 
         return boardSolved
@@ -183,8 +186,7 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
     private fun randomFillDiagonalGroups() {
         listOf(0, 4, 8).forEach {group ->
             val options = (1..9).toMutableSet()
-
-            board.cellsByGroup[group]!!.forEach { cell ->
+            board.cellsByGroup[group]?.forEach {cell ->
                 options.random().apply {
                     cell.value = this
                     options.remove(this)
@@ -194,24 +196,24 @@ private class CommandBackTrackGeneratorImpl : BoardGenerator {
     }
 
     private fun Cell.updateOptionsInGrid() {
-        board.cellsByCol[this.col]!!
-            .filter { it.options.isNotEmpty() }
-            .filterNot { it == this }
-            .forEach { cell ->
+        board.cellsByCol[this.col]
+            ?.filter { it.options.isNotEmpty() }
+            ?.filterNot { it == this }
+            ?.forEach { cell ->
                 cell.options.remove(this.value)
                 if(cell.options.isEmpty()) throw NoSuchElementException("You left cell ${cell.row}:${cell.col} with no options.")
             }
-        board.cellsByRow[this.row]!!
-            .filter { it.options.isNotEmpty() }
-            .filterNot { it == this }
-            .forEach { cell ->
+        board.cellsByRow[this.row]
+            ?.filter { it.options.isNotEmpty() }
+            ?.filterNot { it == this }
+            ?.forEach { cell ->
                 cell.options.remove(this.value)
                 if(cell.options.isEmpty()) throw NoSuchElementException("You left cell ${cell.row}:${cell.col} with no options.")
             }
-        board.cellsByGroup[this.group]!!
-            .filter { it.options.isNotEmpty() }
-            .filterNot { it == this }
-            .forEach { cell ->
+        board.cellsByGroup[this.group]
+            ?.filter { it.options.isNotEmpty() }
+            ?.filterNot { it == this }
+            ?.forEach { cell ->
                 cell.options.remove(this.value)
                 if(cell.options.isEmpty()) throw NoSuchElementException("You left cell ${cell.row}:${cell.col} with no options.")
             }
