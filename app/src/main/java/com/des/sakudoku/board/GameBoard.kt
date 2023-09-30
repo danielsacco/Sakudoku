@@ -1,6 +1,9 @@
 package com.des.sakudoku.board
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -59,7 +64,7 @@ fun GameBoard(
                         data = boardViewModel.cells[row * 9 + col],
                         modifier = modifier,
                         bgColor = backgroundColor(col = col, row = row),
-                        onClick = boardViewModel::clickedCell
+                        onSelect = boardViewModel::selectCell
                     )
                 }
             }
@@ -67,12 +72,14 @@ fun GameBoard(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GameCell(
     data: CellData,
     bgColor: Color,
-    onClick: (cellData: CellData) -> Unit,
-    modifier: Modifier = Modifier
+    onSelect: (cellData: CellData) -> Unit,
+    modifier: Modifier = Modifier,
+    boardViewModel: BoardViewModel = viewModel()
 ) {
     Surface(
         color = if(data.selected) MaterialTheme.colorScheme.surfaceVariant
@@ -84,7 +91,16 @@ fun GameCell(
             modifier = Modifier
                 .size(52.dp)
                 .border(1.dp, Color(0xFFF0F0F0))
-                .selectable(true) { onClick(data) }
+                //.selectable(true) { onSelect(data) }
+                .combinedClickable(
+                    onClick = { onSelect(data) },
+                    onLongClick = {
+                        onSelect(data)
+                        boardViewModel.toggleEditMode()
+                    }
+                )
+
+                
         ) {
             when (data) {
                 is CellData.FixedCellData -> Text(
@@ -93,8 +109,6 @@ fun GameCell(
                     fontSize = 24.sp
                 )
                 is CellData.PlayerCellData -> PlayerCell(data)
-//                is CellData.CellGuess -> Text(text = data.value.toString())
-//                is CellData.CellCandidates -> OptionsCell(data)
             }
         }
     }
@@ -104,7 +118,10 @@ fun GameCell(
 fun PlayerCell(data: CellData.PlayerCellData) {
 
     if(data.hasGuess()) {
-        Text(text = data.guess.toString())
+        Text(
+            text = data.guess.toString(),
+            fontSize = 24.sp
+        )
     } else {
         OptionsCell(data)
     }
@@ -155,9 +172,13 @@ fun NumbersPad(boardViewModel: BoardViewModel = viewModel()) {
                     val number = row * 3 + col
                     Button(
                         onClick = { boardViewModel.numberEntered(number) },
-                        enabled = boardViewModel.isEditableCell()
+                        enabled = boardViewModel.isEditableCell(),
+                        modifier = Modifier.size(80.dp, 60.dp)
                     ) {
-                        Text(number.toString())
+                        Text(
+                            number.toString(),
+                            fontSize = if (boardViewModel.editMode) 16.sp else 26.sp
+                        )
                     }
                 }
             }
@@ -171,8 +192,10 @@ fun ControlsPad(boardViewModel: BoardViewModel = viewModel()) {
         horizontalAlignment = Alignment.End
     ) {
         EditSwitch()
+        //EditButton()
         ClearButton()
         UndoButton()
+        VerifyButton()
     }
 }
 
@@ -191,10 +214,21 @@ fun EditSwitch(boardViewModel: BoardViewModel = viewModel()) {
 }
 
 @Composable
+fun EditButton(boardViewModel: BoardViewModel = viewModel()) {
+    Button(
+        onClick = { boardViewModel.toggleEditMode() },
+        //enabled = true
+    ) {
+        Icon(imageVector = Icons.Default.Edit, contentDescription = null)
+    }
+
+}
+
+@Composable
 fun ClearButton(boardViewModel: BoardViewModel = viewModel()) {
     Button(
         onClick = { boardViewModel.clearCell() },
-        enabled = boardViewModel.isEditableCell()
+        enabled = boardViewModel.isErasableCell()
     ) {
         Icon(imageVector = Icons.Default.Delete, contentDescription = null)
     }
@@ -204,13 +238,21 @@ fun ClearButton(boardViewModel: BoardViewModel = viewModel()) {
 @Composable
 fun UndoButton(boardViewModel: BoardViewModel = viewModel()) {
     Button(
-        onClick = {  }, // TODO
-        enabled = false
+        onClick = { boardViewModel.undoLastPlayerAction() },
+        enabled = boardViewModel.canUndo()
     ) {
         Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
     }
 }
 
+@Composable
+fun VerifyButton(boardViewModel: BoardViewModel = viewModel()) {
+    Button(
+        onClick = {  }, // TODO
+    ) {
+        Icon(imageVector = Icons.Default.Check, contentDescription = null)
+    }
+}
 
 fun backgroundColor(row: Int, col: Int): Color {
     val groupNumber = (row /3) + (col / 3)

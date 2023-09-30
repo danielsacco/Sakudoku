@@ -12,6 +12,8 @@ sealed class CellData {
 
     abstract fun clear()
 
+    open fun erasable() = false
+
     var selected: Boolean by mutableStateOf(false)
 
     /**
@@ -49,33 +51,30 @@ sealed class CellData {
             }
         }
 
-
         fun toggleGuess(value: Int) {
-            _guess = if(_guess == value) {
-                null
-            } else {
-                value
-            }
+            _guess = if(_guess == value) null else value
         }
+
+        override fun erasable() = candidates.isNotEmpty() || _guess != null
 
         override fun clear() {
             candidates = emptySet()
             _guess = null
         }
+
+        fun copyStateFrom(other: PlayerCellData) {
+            candidates = other.candidates
+            _guess = other.guess
+        }
+
+        fun deepCopy() : PlayerCellData {
+            return this.copy().also {
+                it.candidates = mutableSetOf<Int>().apply {
+                    addAll(candidates)
+                }
+                it._guess = _guess
+            }
+        }
     }
-
-    /**
-     * A cell filled with a number guessed by the player
-     */
-//    data class CellGuess(override val col: Int, override val row: Int, val value: Int) : CellData()
-
-    /**
-     * A Cell showing the candidates guessed by the player or calculated by software
-     */
-//    class CellCandidates(override val col: Int, override val row: Int, private val options: Set<Int> = emptySet()) : CellData() {
-//        fun isCandidate(value: Int) = options.contains(value)
-//
-//        fun isEmpty() = options.isEmpty()
-//    }
 }
 

@@ -4,6 +4,7 @@ A Sudoku game under development
 
 ## TODO
 - Implement first actions with undo
+- Implement redo (maybe stacking cell snapshot before undo)
 - Try a board filler that:
     - fills independent groups 0, 4, 8
     - calculate options for unset cells
